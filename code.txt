@@ -1,0 +1,328 @@
+#include<Windows.h>
+#include <glut.h>
+#include <iostream>
+#include <cstring>  
+#include <cstdlib>
+#include <stdlib.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+GLuint textureID;
+
+void loadTexture(const char* filename) {
+    int width, height, channels;
+    unsigned char* image = stbi_load(filename, &width, &height, &channels, STBI_rgb);
+
+    if (image == NULL) {
+        fprintf(stderr, "Failed to load texture: %s\n", stbi_failure_reason());
+        return;
+    }
+
+    printf(" %d" , width);
+    printf(" %d", height);
+
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+   
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+  
+    stbi_image_free(image);
+
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR) {
+        std::cerr << "OpenGL error: " << error << std::endl;
+    }
+    
+    glBindTexture(GL_TEXTURE_2D,0 );
+
+   
+}
+
+void output(int x, int y, float r, float g, float b, void* font, char* string)
+{
+    glColor3f(r, g, b);
+    glRasterPos2f(x, y);
+    int len, i;
+    len = (int)strlen(string);
+    for (i = 0; i < len; i++) {
+        glutBitmapCharacter(font, string[i]);
+    }
+}
+
+void obstacle(float x, float y) {
+    // triangle and square inside
+    glColor3f(0.0f, 0.1f, 0.2f);
+    glBegin(GL_TRIANGLES);
+    glVertex2f(x, y);
+    glVertex2f(x + 20, y + 20);
+    glVertex2f(x + 40, y);
+    glEnd();
+    // square
+    glColor3f(1.0f, 0.5f, 0.0f);
+    glBegin(GL_QUADS);
+    glVertex2f(x + 12, y + 4);
+    glVertex2f(x + 28, y + 4);
+    glVertex2f(x + 28, y + 12);
+    glVertex2f(x + 12, y + 12);
+    glEnd();
+    output(x + 16, y + 4, 1, 1, 1, GLUT_BITMAP_8_BY_13, "O");
+
+}
+
+void power_up_time(float x, float y) {
+    //hexagon 
+    glColor3f(0.81f, 0.71f, 0.23f);
+    glBegin(GL_POLYGON);
+    glVertex2f(x, y);
+    glVertex2f(x + 20, y);
+    glVertex2f(x + 30, y - 15);
+    glVertex2f(x + 20, y - 30);
+    glVertex2f(x, y - 30);
+    glVertex2f(x - 10, y - 15);
+    glEnd();
+
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glBegin(GL_LINES);
+    glVertex2f(x, y);
+    glVertex2f(x + 20, y);
+
+    glVertex2f(x + 20, y - 30);
+    glVertex2f(x, y - 30);
+    glEnd();
+
+
+
+    output(x - 8, y - 20, 1, 0, 0, GLUT_BITMAP_8_BY_13, "+30s");
+}
+
+void power_up_obstacle(float x, float y) {
+    //hexagon 
+    glColor3f(0.85f, 0.85f, 0.10f);
+    glBegin(GL_POLYGON);
+    glVertex2f(x, y);
+    glVertex2f(x + 20, y);
+    glVertex2f(x + 30, y - 15);
+    glVertex2f(x + 20, y - 30);
+    glVertex2f(x, y - 30);
+    glVertex2f(x - 10, y - 15);
+    glEnd();
+
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glBegin(GL_LINES);
+    glVertex2f(x, y);            // a to f
+    glVertex2f(x - 10, y - 15);
+
+    glVertex2f(x + 30, y - 15);  // c to d
+    glVertex2f(x + 20, y - 30);
+    glEnd();
+
+    output(x, y - 20, 1, 0, 0, GLUT_BITMAP_9_BY_15, "-O");
+}
+
+void collectable(float x, float y) {
+    glColor3f(0.5f, 1.0f, 0.5f);
+
+    glBegin(GL_QUADS);
+    glVertex2f(x - 10, y - 10); // Bottom-left 
+    glVertex2f(x + 10, y - 10); // Bottom-right 
+    glVertex2f(x + 10, y + 10); // Top-right 
+    glVertex2f(x - 10, y + 10); // Top-left 
+    glEnd();
+
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glBegin(GL_LINES);
+    glVertex2f(x - 10, y + 8);
+    glVertex2f(x + 10, y + 8);
+
+
+    glVertex2f(x - 10, y - 8);
+    glVertex2f(x + 10, y - 8);
+    glEnd();
+
+    output(x - 5, y - 5, 1, 0, 0, GLUT_BITMAP_9_BY_15, "C");
+
+}
+
+void goal() {
+
+    loadTexture("D:/University/semesters/7th Semester/Graphics/lab/openGL template/OpenGL2DTemplate/goalTexture.jpg");
+
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    glColor3f(0.0f, 0.0f, 0.0f);
+
+    glBegin(GL_LINE_LOOP);
+
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2f(80.0f, 60.0f); // Bottom-left
+
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex2f(160.0f, 60.0f); // Bottom-right
+
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex2f(160.0f, 100.0f); // Top-right 
+
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex2f(80.0f, 100.0f); // Top-left 
+    glEnd();
+
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+
+    glColor3f(0.0f, 0.0f, 0.0f);
+
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(80.0f, 100.0f); // Top-left
+    glVertex2f(100.0f, 120.0f); // e7wed yemen 
+    glVertex2f(180.0f, 120.0f); // e7wed yemen more
+    glVertex2f(160.0f, 100.0f); // Top-right 
+
+    glEnd();
+
+    glBegin(GL_LINES);
+    glVertex2f(180.0f, 120.0f);
+    glVertex2f(180.0f, 80.0f);
+
+    glEnd();
+
+    glBegin(GL_LINES);
+    glVertex2f(180.0f, 80.0f);
+    glVertex2f(160.0f, 60.0f);
+
+    glEnd();
+}
+
+void Display() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    // scence boundaries
+        // scene boundary 1 (health bar) line + quad
+    output(5, 575, 0, 0, 0, GLUT_BITMAP_9_BY_15, "health:");
+    glColor3f(1.0f, 0.0f, 0.0f);
+    glBegin(GL_QUADS);
+    glVertex2f(75.0f, 590.0f);
+    glVertex2f(575.0f, 590.0f);
+    glVertex2f(575.0f, 570.0f);
+    glVertex2f(75.0f, 570.0f);
+    glEnd();
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glBegin(GL_LINES);
+    glVertex2f(0.0f, 560.0f);
+    glVertex2f(600.0f, 560.0f);
+    glEnd();
+
+    // scene boundary 2 (score) + line + polygon
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glBegin(GL_LINES);
+    glVertex2f(70.0f, 560.0f);
+    glVertex2f(70.0f, 0.0f);
+    glEnd();
+    output(10, 400, 0, 0, 0, GLUT_BITMAP_9_BY_15, "score:");
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(5.0f, 380.0f);
+    glVertex2f(65.0f, 380.0f);
+    glVertex2f(65.0f, 250.0f);
+    glVertex2f(5.0f, 250.0f);
+    glEnd();
+
+    // scene boundary 3 (time) line+polygon
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glBegin(GL_LINES);
+    glVertex2f(530.0f, 560.0f);
+    glVertex2f(530.0f, 0.0f);
+    glEnd();
+    output(540, 400, 0, 0, 0, GLUT_BITMAP_9_BY_15, "time:");
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(535.0f, 380.0f);
+    glVertex2f(595.0f, 380.0f);
+    glVertex2f(595.0f, 250.0f);
+    glVertex2f(535.0f, 250.0f);
+    glEnd();
+
+    // scene boundary 4 (msg) line + quad
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glBegin(GL_LINES);
+    glVertex2f(70.0f, 50.0f);
+    glVertex2f(530.0f, 50.0f);
+    glEnd();
+    glColor3f(0.255f, 1.0f, 0.67f);
+    glBegin(GL_QUADS);
+    glVertex2f(100.0f, 45.0f);
+    glVertex2f(500.0f, 45.0f);
+    glVertex2f(500.0f, 5.0f);
+    glVertex2f(100.0f, 5.0f);
+    glEnd();
+    output(150, 20, 0.2, 0.5, 0.11, GLUT_BITMAP_9_BY_15, "Reach the goal before timeout !");
+
+    // player
+        // Head (using GL_POINTS)
+    glColor3f(1.0f, 0.0f, 0.0f);  // red
+    glPointSize(10.0);
+    glBegin(GL_POINTS);
+    glVertex2f(300.0f, 300.0f);
+    glEnd();
+
+    // Body (using GL_LINES)
+    glColor3f(0.0, 1.0, 0.0);  //  green
+    glBegin(GL_LINES);
+    glVertex2f(300.0f, 300.0f);
+    glVertex2f(300.0, 250.0f);
+    glEnd();
+
+    // Arms (using GL_LINE_STRIP)
+    glColor3f(0.0, 0.0, 1.0);  //  blue
+    glBegin(GL_LINE_STRIP);
+    glVertex2f(280.0f, 260.0f);
+    glVertex2f(300.0f, 275.0f);
+    glVertex2f(320.0f, 260.0f);
+    glEnd();
+
+    // Legs (using GL_QUADS)
+    glColor3f(1.0, 1.0, 0.0);  //  yellow
+    glBegin(GL_QUADS);
+    glVertex2f(295.0f, 250.0f);
+    glVertex2f(305.0f, 250.0f);
+    glVertex2f(305.0f, 225.0f);
+    glVertex2f(295.0f, 225.0f);
+    glEnd();
+
+    // obstacles
+    obstacle(200.0f, 200.0f);
+
+    // power-up
+    power_up_time(400.0f, 400.0f);
+    power_up_obstacle(150.0f, 500.0f);
+
+    //collectables
+    collectable(144, 288);
+
+    // goal
+    goal();
+
+    glFlush();
+}
+
+int main(int argc, char** argr) {
+    glutInit(&argc, argr);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+
+    glutInitWindowSize(600, 600);
+    glutInitWindowPosition(150, 150);
+
+    glutCreateWindow("Game");
+    glutDisplayFunc(Display);
+
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glMatrixMode(GL_PROJECTION);
+    gluOrtho2D(0.0, 600, 0.0, 600);
+
+    glutMainLoop();
+    return 0;
+}
